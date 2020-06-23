@@ -1,0 +1,12 @@
+#sendButton{
+    -fx-background-radius: 20em;
+    -fx-min-width: 25px;
+    -fx-min-height: 25px;
+    -fx-background-color: #1d1d1d;
+    -fx-text-fill: white;
+    -fx-background-insets: 0px;
+    -fx-padding: 0px;
+}
+#sendButton:hover {
+    -fx-background-color: #3a3a3a;
+}
