@@ -13,12 +13,11 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
@@ -50,6 +49,7 @@ public class Controller implements Initializable {
 
     private boolean authenticated;
     private String nick;
+    private String login;
 
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;
@@ -116,6 +116,31 @@ public class Controller implements Initializable {
                         textArea.appendText(str + "\n");
                     }
 
+
+                    String filePath = "C:/Java/javapro_180620/client/src/main/resources/history_" + login + ".txt";
+                    File history = new File(filePath);
+                    if (!history.exists()){
+                        history.createNewFile();
+                    }
+                    RandomAccessFile raf = new RandomAccessFile(filePath, "r");
+                    String line = raf.readLine();
+                    ArrayList<String> his = new ArrayList<>();
+                    while (line != null){
+                        String utf8 = new String(line.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+                        his.add(utf8);
+                        line = raf.readLine();
+                    }
+                    int LAST_LINES = 100;
+                    if (his.size() < LAST_LINES){
+                        for (String s: his) {
+                            textArea.appendText(s + "\n");
+                        }
+                    }else {
+                        for (int i = his.size() - LAST_LINES; i < his.size(); i++) {
+                            textArea.appendText(his.get(i) + "\n");
+                        }
+                    }
+
                     //цикл работы
                     while (true) {
                         String str = in.readUTF();
@@ -123,6 +148,12 @@ public class Controller implements Initializable {
                         if (str.startsWith("/")){
                             if (str.equals("/end")) {
                                 break;
+                            }
+                            if (str.startsWith("/newnick ")){
+                                nick = str.split(" ")[1];
+                                Platform.runLater(()->{
+                                    label.setText(nick + ":");
+                                });
                             }
                             if (str.startsWith("/clientlist ")){
                                 String[] token = str.split("\\s");
@@ -134,6 +165,9 @@ public class Controller implements Initializable {
                                 });
                             }
                         }else {
+                            FileOutputStream toFile = new FileOutputStream(filePath, true);
+                            toFile.write(str.getBytes());
+                            toFile.write("\n".getBytes());
                             textArea.appendText(str + "\n");
                         }
                     }
@@ -193,6 +227,7 @@ public class Controller implements Initializable {
         }
 
         try {
+            login = loginField.getText().trim();
             out.writeUTF("/auth " + loginField.getText().trim() + " " + passwordField.getText().trim().hashCode());
             passwordField.clear();
         } catch (IOException e) {
@@ -212,17 +247,17 @@ public class Controller implements Initializable {
 
     public void tryRegistration(String login, String password ,String nickname){
         String msg = String.format("/reg %s %s %s", login, password.hashCode() ,nickname);
-
+        if (login == null || password.hashCode() == 0 || nickname == null){
+            return;
+        }
         if (socket == null || socket.isClosed()) {
             connect();
         }
-
         try {
             out.writeUTF(msg);
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 }
 
