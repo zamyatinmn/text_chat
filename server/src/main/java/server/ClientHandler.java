@@ -97,9 +97,19 @@ public class ClientHandler {
                             }
                             //Смена ника
                             if (str.startsWith("/change ")){
-                                String[] token = str.split("\\s", 2);
-                                Server.changeNick(token[1], login);
-                                sendMsg("/end");
+                                String[] token = str.split("\\s");
+                                if (token.length != 2){
+                                    continue;
+                                }
+                                if (SQLHandler.changeNick(token[1], login)){
+                                    sendMsg("/newnick " + token[1]);
+                                    this.nick = token[1];
+                                    server.broadcastClientList();
+                                } else {
+                                    sendMsg("Не удалось сменить ник");
+                                }
+
+//                                sendMsg("/end");
                                 continue;
                             }
 
@@ -119,7 +129,7 @@ public class ClientHandler {
                 catch (SocketTimeoutException e){
                     System.out.println("Таймаут бездействия: " + nick);
                 }
-                catch (IOException | SQLException e) {
+                    catch (IOException e) {
                     e.printStackTrace();
                 } finally {
                     server.unsubscribe(this);
@@ -148,7 +158,7 @@ public class ClientHandler {
 
     /**
      * Отправка сообщения
-     * @param msg
+     * @param msg текст сообщения
      */
     public void sendMsg(String msg) {
         try {
