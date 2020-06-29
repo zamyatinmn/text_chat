@@ -3,9 +3,10 @@ package server;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.*;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class Server {
@@ -20,6 +21,7 @@ public class Server {
         Socket socket;
 
         final int PORT = 8189;
+        ExecutorService service = Executors.newFixedThreadPool(4);
 
         try {
             if (SQLHandler.connectDatabase()){
@@ -33,7 +35,9 @@ public class Server {
             while (true) {
                 socket = server.accept();
                 System.out.println("Клиент подключился ");
-                new ClientHandler(this, socket);
+                Socket finalSocket = socket;
+                Server finalServer = this;
+                service.execute(() -> new ClientHandler(finalServer, finalSocket));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -42,6 +46,7 @@ public class Server {
         }
 
             finally {
+            service.shutdown();
             try {
                 assert server != null;
                 server.close();
