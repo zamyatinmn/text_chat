@@ -7,14 +7,27 @@ import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.*;
 
 
 public class Server {
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
+    Handler handler;
+    {
+        try {
+            handler = new FileHandler("server.log", true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     private List<ClientHandler> clients;
     private AuthService authService;
 
 
     public Server() {
+        handler.setFormatter(new SimpleFormatter());
+        handler.setLevel(Level.INFO);
+        logger.addHandler(handler);
         clients = new Vector<>();
         authService = new SqlAuthService();
         ServerSocket server = null;
@@ -25,16 +38,16 @@ public class Server {
 
         try {
             if (SQLHandler.connectDatabase()){
-                System.out.println("Соединение с БД");
+                logger.info("Соединение с БД");
             } else {
                 throw new RuntimeException();
             }
             server = new ServerSocket(PORT);
-            System.out.println("Сервер запущен!");
+            logger.info("Сервер запущен!");
 
             while (true) {
                 socket = server.accept();
-                System.out.println("Клиент подключился ");
+                logger.info("Соединение с клиентом " + socket.getInetAddress());
                 Socket finalSocket = socket;
                 Server finalServer = this;
                 service.execute(() -> new ClientHandler(finalServer, finalSocket));
@@ -42,7 +55,7 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         } catch (RuntimeException e){
-            System.out.println("Нет соединения с БД");
+            logger.severe("Нет соединения с БД");
         }
 
             finally {

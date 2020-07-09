@@ -5,9 +5,10 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.sql.SQLException;
+import java.util.logging.Logger;
 
 public class ClientHandler {
+    private static final Logger logger = Logger.getLogger(Server.class.getName());
     private Server server;
     private Socket socket;
     private DataInputStream in;
@@ -30,6 +31,7 @@ public class ClientHandler {
                         String str = in.readUTF();
                         //регистрация
                         if (str.startsWith("/reg ")) {
+                            logger.fine(str);
                             String[] token = str.split(" ");
 
                             if (token.length < 4) {
@@ -50,7 +52,7 @@ public class ClientHandler {
                         if (str.startsWith("/auth ")) {
                             String[] token = str.split(" ");
 
-                            System.out.println(str);
+                            logger.fine(str);
                             if (token.length < 3) {
                                 continue;
                             }
@@ -65,7 +67,7 @@ public class ClientHandler {
                                     nick = newNick;
 
                                     server.subscribe(this);
-                                    System.out.println("Клиент: " + nick + " подключился");
+                                    logger.info("Клиент: " + nick + " подключился");
                                     break;
                                 }else {
                                     sendMsg("Пользователь с таким логином уже авторизован");
@@ -82,6 +84,7 @@ public class ClientHandler {
                         String str = in.readUTF();
                         //блок системных сообщений
                         if (str.startsWith("/")){
+                            logger.fine(str);
                             if (str.equals("/help")){
                                 sendMsg("Список системных комманд:\n" +
                                         "/end - логаут\n" +
@@ -127,13 +130,13 @@ public class ClientHandler {
                     }
                 }
                 catch (SocketTimeoutException e){
-                    System.out.println("Таймаут бездействия: " + nick);
+                    logger.info("Таймаут бездействия: " + nick);
                 }
                     catch (IOException e) {
                     e.printStackTrace();
                 } finally {
                     server.unsubscribe(this);
-                    System.out.println("Клиент отключился");
+                    logger.info("Клиент: " + nick + " отключился");
                     try {
                         socket.close();
                     } catch (IOException e) {
@@ -156,10 +159,6 @@ public class ClientHandler {
         return nick;
     }
 
-    /**
-     * Отправка сообщения
-     * @param msg текст сообщения
-     */
     public void sendMsg(String msg) {
         try {
             out.writeUTF(msg);
